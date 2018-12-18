@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring       http://camel.apache.org/schema/spring/camel-spring.xsd">
+	<camelContext id="camel"
+		xmlns="http://camel.apache.org/schema/spring">
+		<propertyPlaceholder
+			location="classpath:config/sql.properties,classpath:config/endpoint.properties, classpath:config/db.server.properties"
+			id="properties" />
+		<route id="simple-route">
+			<from id="fromFile"
+				uri="file:{{incoming.folder}}?move={{done.folder}}/${file:name.noext}-${date:now:yyyyMMddHHmm}.${file:ext}&amp;moveFailed={{error.folder}}/${file:name.noext}-${date:now:yyyyMMddHHmm}.${file:ext}" />
+			<choice>
+				<when>
+					<simple>${body} != null</simple>
+
+
+					<setHeader headerName="orderId">
+						<xpath saxon="true" resultType="java.lang.String">//orderId/text()</xpath>
+					</setHeader>
+					<setHeader headerName="countryName">
+						<xpath saxon="true" resultType="java.lang.String">//countryName/text()</xpath>
+					</setHeader>
+					<setHeader headerName="orderAmount">
+						<xpath saxon="true" resultType="java.lang.String">//orderAmount/text()</xpath>
+					</setHeader>
+					<setHeader headerName="address">
+						<xpath saxon="true" resultType="java.lang.String">//address/text()</xpath>
+					</setHeader>
+					<setHeader headerName="price">
+						<xpath saxon="true" resultType="java.lang.String">//price/text()</xpath>
+					</setHeader>
+					<marshal>
+
+						<csv delimiter=",">
+							<header>orderId</header>
+							<header>countryName</header>
+							<header>orderAmount</header>
+							<header>address</header>
+							<header>price</header>
+						</csv>
+
+					</marshal>
+					<to
+						uri="file:{{csv.folder}}?fileName=${headers.CamelFileName}-${date:now:yyyyMMddHHmm}.csv" />
+					<setHeader headerName="from">
+						<constant>ardit.zotaj@fshnstudent.info</constant>
+					</setHeader>
+
+					<setHeader headerName="to">
+						<constant>arditzotaj@gmail.com</constant>
+					</setHeader>
+
+					<setHeader headerName="subject">
+						<simple>${headers.orderId}</simple>
+					</setHeader>
+
+					<!-- <to uri="smtp:{{gmail.com}}" /> -->
+					<!-- <to uri="sql:{{select.existing.orderId}}??outputType=SelectOne&amp;outputHeader=orderIdFromDb" 
+						/> -->
+					<!-- <to uri="http://192.168.1.1/api/restApi/post?orderId=${headers.orderIdFromDb}" 
+						/> -->
+				</when>
+			</choice>
+			<log id="route-log" message=">>> ${body}" />
+		</route>
+	</camelContext>
+</beans>
